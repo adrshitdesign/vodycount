@@ -488,7 +488,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v8</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v9</p>
     </div>
   </div>
 
@@ -623,6 +623,9 @@
       $("ov-auth").classList.add("hidden");
       await boot();
     } else {
+      booted = false;
+      cluster.clearLayers(); checkins = [];
+      for (const k in markerById) delete markerById[k];
       $("ov-auth").classList.remove("hidden");
     }
   });
@@ -666,8 +669,21 @@
     h += `<b>${escapeHtml(pr.pseudo)}</b><br><small>${timeAgo(c.created_at)}</small>`;
     if (c.description) h += `<div class="desc">« ${escapeHtml(c.description)} »</div>`;
     if (c.photo_url) h += `<img src="${c.photo_url}" alt="" loading="lazy">`;
+    if (session && c.user_id === session.user.id)
+      h += `<br><button onclick="vodyDelete('${c.id}')" style="margin-top:6px;background:#FF2E9E;color:#fff;border:2px solid #0B0118;border-radius:99px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🗑 SUPPRIMER</button>`;
     return h;
   }
+  window.vodyDelete = async (id)=>{
+    if (!confirm("Supprimer cette vody ?")) return;
+    const {error} = await sb.from("checkins").delete().eq("id", id);
+    if (error) { toast("ERREUR SUPPRESSION 😵 " + (error.message||"").slice(0,60)); return; }
+    const i = checkins.findIndex(c=>c.id===id);
+    if (i>=0) checkins.splice(i,1);
+    if (markerById[id]){ cluster.removeLayer(markerById[id]); delete markerById[id]; }
+    map.closePopup();
+    updateCounters(); renderFeed(); renderLb();
+    toast("VODY SUPPRIMÉE 🗑");
+  };
   function isVisible(c){
     if (filter==="moi") return c.user_id === session.user.id;
     if (filter==="crew") return crewUserIds.has(c.user_id);
@@ -697,7 +713,10 @@
   /* ============================================================
      BOOT — chargement initial après login
   ============================================================ */
+  let booted = false;
   async function boot(){
+    if (booted) return; // évite les doublons : onAuthStateChange refire boot() à chaque refresh de token
+    booted = true;
     // profil
     const {data: prof} = await sb.from("profiles").select("*").eq("id", session.user.id).single();
     myProfile = prof;

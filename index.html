@@ -103,7 +103,12 @@
   .leaflet-popup-content .mood{font-size:20px;margin-right:4px;vertical-align:-2px}
   .leaflet-popup-content .desc{margin-top:4px;font-style:italic}
   .leaflet-popup-tip{background:#fff;border:3px solid var(--black)}
-  .leaflet-popup-close-button{font-size:18px!important;color:var(--ink)!important;font-weight:700}
+  .leaflet-popup-close-button{
+    font-size:15px!important;color:#fff!important;font-weight:700;
+    background:var(--magenta)!important;border:2px solid var(--black);border-radius:99px;
+    width:26px!important;height:26px!important;line-height:22px!important;text-align:center;
+    top:-9px!important;right:-9px!important;box-shadow:2px 2px 0 rgba(11,1,24,.55);
+  }
 
   /* ============ UI FLOTTANTE ============ */
   .top{
@@ -488,7 +493,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v9</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v10</p>
     </div>
   </div>
 
@@ -692,6 +697,7 @@
   function addMarker(c, fly){
     const mine = c.user_id === session.user.id;
     const m = L.marker([c.lat,c.lng],{icon:pinIcon(c.profile.color, mine)}).bindPopup(popupHtml(c),{maxWidth:220});
+    m.on("click", ()=> map.panTo([c.lat, c.lng], {animate:true, duration:.4}));
     markerById[c.id] = m;
     if (isVisible(c)) cluster.addLayer(m);
     if (fly){ map.flyTo([c.lat,c.lng], Math.max(map.getZoom(),15), {duration:.8}); setTimeout(()=>m.openPopup(),900); }
@@ -1076,6 +1082,29 @@
     });
   });
   document.querySelectorAll(".sheet .grab").forEach(g=>g.addEventListener("click", backToMap));
+
+  // swipe vers le bas pour fermer une sheet (depuis la poignée, ou depuis le contenu s'il est scrollé tout en haut)
+  document.querySelectorAll(".sheet").forEach(sh=>{
+    const inner = sh.querySelector(".inner");
+    let startY = null, dragging = false;
+    sh.addEventListener("touchstart", e=>{
+      const fromGrab = e.target.closest(".grab");
+      if (!fromGrab && (!inner || inner.scrollTop > 2)) { startY = null; return; }
+      startY = e.touches[0].clientY; dragging = false;
+    }, {passive:true});
+    sh.addEventListener("touchmove", e=>{
+      if (startY === null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 6){ dragging = true; sh.style.transition = "none"; sh.style.transform = `translateY(${dy}px)`; }
+    }, {passive:true});
+    sh.addEventListener("touchend", e=>{
+      if (startY === null) return;
+      const dy = e.changedTouches[0].clientY - startY;
+      sh.style.transition = ""; sh.style.transform = "";
+      if (dragging && dy > 90) backToMap();
+      startY = null; dragging = false;
+    });
+  });
 })();
 </script>
 </body>

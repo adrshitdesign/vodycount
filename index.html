@@ -378,9 +378,10 @@
   <!-- ============ AUTH ============ -->
   <div class="overlay hidden" id="ov-auth">
     <div class="ov-logo">VODYCOUNT</div>
-    <p class="ov-sub">Entre ton email, on t'envoie un lien magique. Pas de mot de passe, pas de prise de tête.</p>
+    <p class="ov-sub">Email + mot de passe, et c'est parti. Premier passage ? Ton compte se crée tout seul.</p>
     <input class="ov-input" id="emailInput" type="email" placeholder="ton@email.fr" autocomplete="email">
-    <button class="ov-btn" id="loginBtn">⚡ ENVOIE LE LIEN</button>
+    <input class="ov-input" id="passInput" type="password" placeholder="mot de passe (6 caractères min)" autocomplete="current-password">
+    <button class="ov-btn" id="loginBtn">⚡ C'EST PARTI</button>
     <div class="ov-msg" id="authMsg"></div>
     <p class="ov-note">En te connectant tu acceptes que tes pins (position, photo, texte) soient visibles par les autres utilisateurs connectés. Tu peux tout supprimer à tout moment depuis ton profil.</p>
   </div>
@@ -588,18 +589,28 @@
   });
 
   /* ============================================================
-     AUTH — lien magique
+     AUTH — email + mot de passe (connexion ou création auto)
   ============================================================ */
   $("loginBtn").addEventListener("click", async ()=>{
     const email = $("emailInput").value.trim();
+    const password = $("passInput").value;
     if (!email.includes("@")) { $("authMsg").textContent = "Email invalide 🤔"; return; }
-    $("authMsg").textContent = "Envoi…";
-    const {error} = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname }
-    });
-    $("authMsg").textContent = error ? ("Erreur : " + error.message) : "📬 Check tes mails et clique le lien !";
+    if (password.length < 6) { $("authMsg").textContent = "Mot de passe : 6 caractères minimum 🔐"; return; }
+    $("authMsg").textContent = "Connexion…";
+    // 1. on tente la connexion
+    const {error: loginErr} = await sb.auth.signInWithPassword({ email, password });
+    if (!loginErr) return; // connecté → onAuthStateChange prend le relais
+    // 2. compte inconnu → on le crée dans la foulée
+    const {data: suData, error: signupErr} = await sb.auth.signUp({ email, password });
+    if (!signupErr && suData.session) return; // compte créé + connecté
+    // 3. sinon : compte existant avec mauvais mot de passe, ou autre souci
+    if (signupErr && /already|registered/i.test(signupErr.message)) {
+      $("authMsg").textContent = "Mauvais mot de passe pour ce compte 🤔";
+    } else {
+      $("authMsg").textContent = "Erreur : " + (signupErr ? signupErr.message : loginErr.message);
+    }
   });
+  $("passInput").addEventListener("keydown", e=>{ if (e.key === "Enter") $("loginBtn").click(); });
 
   sb.auth.onAuthStateChange(async (_event, s)=>{
     session = s;

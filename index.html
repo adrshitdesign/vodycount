@@ -488,7 +488,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v6</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v7</p>
     </div>
   </div>
 
@@ -979,9 +979,12 @@
   const LB_BG=["var(--magenta)","var(--cyan)","var(--lime)","var(--orange)"];
   const LB_FG=["#fff","var(--ink)","var(--ink)","var(--ink)"];
   async function renderLb(){
+    if (!myCrews.length){
+      $("lbList").innerHTML = `<p style="color:rgba(255,255,255,.6);font-size:14px">Rejoins ou crée un crew pour débloquer le classement 🔥</p>`;
+      return;
+    }
     const {data} = await sb.from("weekly_scores").select("*").limit(50);
-    let rows = data||[];
-    if (myCrews.length) rows = rows.filter(r=>crewUserIds.has(r.user_id));
+    let rows = (data||[]).filter(r=>crewUserIds.has(r.user_id));
     rows = rows.slice(0,10);
     $("lbList").innerHTML = rows.map((r,i)=>`
       <div class="lb" style="background:${LB_BG[i%4]};color:${LB_FG[i%4]}">

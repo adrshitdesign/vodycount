@@ -181,7 +181,7 @@
 
   /* composer */
   #sheet-compose{top:auto;height:84%}
-  .comp-row{margin-bottom:16px}
+  .comp-row{margin-bottom:11px}
   .comp-label{font-family:var(--fd);font-size:11px;color:var(--cyan);margin-bottom:9px;letter-spacing:.05em}
   #photoZone{
     width:100%;border:3px dashed rgba(255,255,255,.4);border-radius:20px;
@@ -190,7 +190,7 @@
   }
   #photoZone:active{transform:scale(.98)}
   #photoZone.has{padding:0;border-style:solid;border-color:#fff}
-  #photoZone img{width:100%;max-height:170px;object-fit:cover;display:block}
+  #photoZone img{width:100%;max-height:130px;object-fit:cover;display:block}
   #photoZone .rm{
     position:absolute;top:8px;right:8px;background:var(--magenta);color:#fff;border:2px solid var(--black);
     border-radius:99px;width:30px;height:30px;font-weight:700;cursor:pointer;
@@ -213,7 +213,8 @@
   }
   #descInput:focus{border-color:var(--cyan)}
   #descInput::placeholder{color:rgba(255,255,255,.4)}
-  .comp-actions{display:flex;gap:10px;margin-top:4px}
+  /* boutons épinglés en bas du panneau, hors zone de scroll : toujours visibles */
+  .comp-actions{flex:none;display:flex;gap:10px;padding:10px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg,var(--deep) 70%,transparent)}
   #pinGo{
     flex:1;background:linear-gradient(180deg,var(--lime),#A8E51E);color:var(--ink);
     border:3px solid var(--black);outline:2px solid #fff;border-radius:99px;padding:15px;
@@ -433,10 +434,10 @@
         <div class="comp-label">💬 RACONTE (OU PAS)</div>
         <textarea id="descInput" rows="2" maxlength="140" placeholder="Ex : goût pastèque, le DJ vient de sauver la soirée…"></textarea>
       </div>
-      <div class="comp-actions">
-        <button id="pinCancel">ANNULER</button>
-        <button id="pinGo">⚡ PIN ÇA !</button>
-      </div>
+    </div>
+    <div class="comp-actions">
+      <button id="pinCancel">ANNULER</button>
+      <button id="pinGo">⚡ PIN ÇA !</button>
     </div>
   </div>
 
@@ -484,7 +485,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v4</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v5</p>
     </div>
   </div>
 

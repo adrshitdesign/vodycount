@@ -164,6 +164,36 @@
   .conf{position:absolute;font-size:24px;pointer-events:none;z-index:25;animation:fly .8s ease-out forwards}
   @keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rr));opacity:0}}
 
+  /* ============ SPOTS ============ */
+  .gone{display:none!important}
+  #spotBtn{
+    position:absolute;left:16px;width:50px;height:50px;border-radius:50%;
+    background:linear-gradient(160deg,var(--cyan),#1FB6D8);border:3px solid var(--black);color:var(--ink);
+    cursor:pointer;display:grid;place-items:center;font-size:22px;
+    box-shadow:4px 4px 0 rgba(11,1,24,.55);transform:rotate(-3deg);
+  }
+  #spotBtn:active{transform:rotate(-3deg) translate(3px,3px);box-shadow:1px 1px 0 rgba(11,1,24,.55)}
+  #crosshair{
+    position:absolute;z-index:22;left:50%;top:50%;transform:translate(-50%,-92%);
+    font-size:40px;pointer-events:none;filter:drop-shadow(2px 2px 0 rgba(11,1,24,.6));
+  }
+  #placeBar{
+    position:absolute;z-index:22;left:0;right:0;bottom:calc(86px + env(safe-area-inset-bottom));
+    display:flex;justify-content:center;gap:10px;padding:0 14px;
+  }
+  #placeOk{
+    background:linear-gradient(180deg,var(--cyan),#1FB6D8);color:var(--ink);border:3px solid var(--black);outline:2px solid #fff;
+    border-radius:99px;padding:14px 24px;font-family:var(--fd);font-size:13px;cursor:pointer;box-shadow:5px 5px 0 rgba(11,1,24,.55);
+  }
+  #placeCancel{
+    background:rgba(20,4,46,.92);color:#fff;border:3px solid rgba(255,255,255,.4);
+    border-radius:99px;padding:14px 20px;font-family:var(--fd);font-size:11px;cursor:pointer;
+  }
+  .vspot .box{
+    width:36px;height:36px;border-radius:12px;background:#fff;border:3px solid var(--black);
+    display:grid;place-items:center;font-size:18px;box-shadow:3px 3px 0 rgba(11,1,24,.55);transform:rotate(-4deg);
+  }
+
   /* ============ SHEETS ============ */
   .sheet{
     position:absolute;z-index:30;left:0;right:0;bottom:0;top:15%;
@@ -408,10 +438,28 @@
   </div>
 
   <div class="fab-zone">
+    <button id="spotBtn" aria-label="Ajouter un spot">🛒</button>
     <button id="dropBtn">⚡ LÂCHE TA VODY</button>
     <button id="locBtn" aria-label="Ma position">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
+  </div>
+
+  <!-- MODE PLACEMENT DE SPOT -->
+  <div id="crosshair" class="gone">📍</div>
+  <div id="placeBar" class="gone">
+    <button id="placeCancel">ANNULER</button>
+    <button id="placeOk">🛒 SPOT ICI</button>
+  </div>
+
+  <!-- NOMMAGE DU SPOT -->
+  <div class="overlay hidden" id="ov-spot">
+    <div class="ov-logo">NOUVEAU SPOT</div>
+    <p class="ov-sub">Un magasin, une épicerie, un frigo magique… dis-nous où on trouve des vodys.</p>
+    <input class="ov-input" id="spotName" maxlength="60" placeholder="Ex : Carrefour City République">
+    <button class="ov-btn" id="spotCreate">🛒 AJOUTER LE SPOT</button>
+    <button class="ov-btn" id="spotCancel2" style="background:rgba(255,255,255,.12);color:#fff;margin-top:8px">ANNULER</button>
+    <div class="ov-msg" id="spotMsg"></div>
   </div>
 
   <p class="legal">L'abus d'alcool est dangereux pour la santé.</p>
@@ -493,7 +541,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v10</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v11</p>
     </div>
   </div>
 
@@ -717,6 +765,95 @@
   });
 
   /* ============================================================
+     SPOTS — où trouver des vodys
+  ============================================================ */
+  let spots = [], spotReviews = {};
+  const spotLayer = L.layerGroup().addTo(map);
+  const spotMarkerById = {};
+  const spotIcon = ()=> L.divIcon({className:"vspot",iconSize:[40,40],iconAnchor:[20,20],popupAnchor:[0,-18],html:'<div class="box">🛒</div>'});
+
+  function spotPopupHtml(s){
+    const rs = spotReviews[s.id]||[];
+    const ok = rs.filter(r=>r.found).length, ko = rs.filter(r=>!r.found).length;
+    const by = (profileCache[s.created_by]||{}).pseudo || "???";
+    let h = `<b>🛒 ${escapeHtml(s.name)}</b><br><small>par ${escapeHtml(by)} · ${timeAgo(s.created_at)}</small>`;
+    h += `<div style="margin:5px 0;font-weight:700">✅ ${ok} trouvé · ❌ ${ko} bredouille</div>`;
+    rs.filter(r=>r.comment).slice(-2).forEach(r=>{
+      h += `<div class="desc">« ${escapeHtml(r.comment)} » <small>— ${escapeHtml((profileCache[r.user_id]||{}).pseudo||"???")}</small></div>`;
+    });
+    h += `<input id="sc-${s.id}" maxlength="140" placeholder="commentaire (optionnel)" style="width:100%;margin-top:7px;padding:7px 9px;border:2px solid var(--black);border-radius:9px;font-size:12px;font-family:var(--fb)">`;
+    h += `<div style="display:flex;gap:6px;margin-top:7px">
+      <button onclick="spotVote('${s.id}',true)" style="flex:1;background:#C8FF2E;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">✅ TROUVÉ</button>
+      <button onclick="spotVote('${s.id}',false)" style="flex:1;background:#eee;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">❌ RIEN</button>
+    </div>`;
+    if (session && s.created_by === session.user.id)
+      h += `<button onclick="spotDelete('${s.id}')" style="margin-top:7px;background:#FF2E9E;color:#fff;border:2px solid #0B0118;border-radius:99px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🗑 SUPPRIMER LE SPOT</button>`;
+    return h;
+  }
+  function addSpotMarker(s){
+    const m = L.marker([s.lat,s.lng],{icon:spotIcon()}).bindPopup(()=>spotPopupHtml(s),{maxWidth:240});
+    m.on("click", ()=> map.panTo([s.lat,s.lng],{animate:true,duration:.4}));
+    spotMarkerById[s.id] = m; spotLayer.addLayer(m);
+  }
+  async function loadSpots(){
+    const {data: sp} = await sb.from("spots").select("*");
+    const {data: rv} = await sb.from("spot_reviews").select("*");
+    spots = sp||[]; spotReviews = {};
+    (rv||[]).forEach(r=>{ (spotReviews[r.spot_id] = spotReviews[r.spot_id]||[]).push(r); });
+    const missing = [...new Set([...spots.map(s=>s.created_by), ...(rv||[]).map(r=>r.user_id)])].filter(id=>!profileCache[id]);
+    if (missing.length){
+      const {data: ps} = await sb.from("profiles").select("id,pseudo,color").in("id", missing);
+      (ps||[]).forEach(p=>profileCache[p.id]={pseudo:p.pseudo,color:p.color});
+    }
+    spotLayer.clearLayers();
+    spots.forEach(addSpotMarker);
+  }
+  window.spotVote = async (id, found)=>{
+    const el = document.getElementById("sc-"+id);
+    const comment = (el && el.value.trim()) || null;
+    const {error} = await sb.from("spot_reviews").upsert({spot_id:id, user_id:session.user.id, found, comment});
+    if (error){ toast("ERREUR AVIS 😵 " + (error.message||"").slice(0,60)); return; }
+    const arr = spotReviews[id] = spotReviews[id]||[];
+    const i = arr.findIndex(r=>r.user_id===session.user.id);
+    const rec = {spot_id:id, user_id:session.user.id, found, comment, created_at:new Date().toISOString()};
+    if (i>=0) arr[i]=rec; else arr.push(rec);
+    map.closePopup();
+    toast(found ? "SPOT CONFIRMÉ ✅" : "SPOT SIGNALÉ BREDOUILLE ❌");
+  };
+  window.spotDelete = async (id)=>{
+    if (!confirm("Supprimer ce spot ?")) return;
+    const {error} = await sb.from("spots").delete().eq("id", id);
+    if (error){ toast("ERREUR 😵"); return; }
+    if (spotMarkerById[id]){ spotLayer.removeLayer(spotMarkerById[id]); delete spotMarkerById[id]; }
+    spots = spots.filter(s=>s.id!==id);
+    map.closePopup(); toast("SPOT SUPPRIMÉ 🗑");
+  };
+  // mode placement : viseur au centre de la carte
+  function endPlacing(){
+    $("crosshair").classList.add("gone"); $("placeBar").classList.add("gone");
+    document.querySelector(".fab-zone").classList.remove("gone");
+  }
+  $("spotBtn").addEventListener("click", ()=>{
+    $("crosshair").classList.remove("gone"); $("placeBar").classList.remove("gone");
+    document.querySelector(".fab-zone").classList.add("gone");
+    toast("DÉPLACE LA CARTE POUR VISER 🎯");
+  });
+  $("placeCancel").addEventListener("click", endPlacing);
+  $("placeOk").addEventListener("click", ()=>{ $("ov-spot").classList.remove("hidden"); $("spotName").focus(); });
+  $("spotCancel2").addEventListener("click", ()=>$("ov-spot").classList.add("hidden"));
+  $("spotCreate").addEventListener("click", async ()=>{
+    const name = $("spotName").value.trim();
+    if (!name){ $("spotMsg").textContent = "Donne un nom au spot 📝"; return; }
+    const c = map.getCenter();
+    const {data, error} = await sb.from("spots").insert({name, lat:c.lat, lng:c.lng, created_by:session.user.id}).select().single();
+    if (error){ $("spotMsg").textContent = "Erreur : " + error.message; return; }
+    spots.push(data); addSpotMarker(data);
+    $("spotName").value=""; $("spotMsg").textContent="";
+    $("ov-spot").classList.add("hidden"); endPlacing();
+    toast("SPOT AJOUTÉ 🛒");
+  });
+
+  /* ============================================================
      BOOT — chargement initial après login
   ============================================================ */
   let booted = false;
@@ -754,6 +891,8 @@
         if (r.user_id === session.user.id) myReactions.add(r.checkin_id);
       });
     }
+
+    await loadSpots();
 
     updateCounters();
     renderFeed();

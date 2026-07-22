@@ -258,6 +258,12 @@
     display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
     background:rgba(255,255,255,.14);color:#fff;margin-left:6px;vertical-align:1px;
   }
+  .lb-tog{
+    background:rgba(255,255,255,.08);border:2px solid transparent;border-radius:99px;
+    font-size:11px;font-weight:700;padding:8px 12px;cursor:pointer;color:#fff;font-family:var(--fb);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .lb-tog.on{background:var(--cyan);border-color:var(--black);color:var(--ink)}
   #descInput{
     width:100%;background:rgba(255,255,255,.08);border:3px solid rgba(255,255,255,.3);
     border-radius:18px;padding:13px 15px;color:#fff;font-family:var(--fb);font-size:14px;
@@ -537,8 +543,16 @@
         <input id="crewCode" placeholder="CODE" maxlength="6">
         <button id="crewJoin">REJOINDRE</button>
       </div>
+      <div class="lb-toggles" id="lbScopeToggle" style="display:flex;gap:8px;margin:10px 0 6px">
+        <button class="lb-tog on" data-scope="crew">MON CREW</button>
+        <button class="lb-tog" data-scope="global">TOUT LE MONDE</button>
+      </div>
+      <div class="lb-toggles" style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="lb-tog on" data-period="week">CETTE SEMAINE</button>
+        <button class="lb-tog" data-period="total">DEPUIS TOUJOURS</button>
+      </div>
       <div id="lbList"></div>
-      <p class="lb-note">Classement de la semaine (reset le lundi). Partage le code de ton crew pour inviter les potes.</p>
+      <p class="lb-note" id="lbNote">Classement de la semaine (reset le lundi). Partage le code de ton crew pour inviter les potes.</p>
     </div>
   </div>
 
@@ -564,7 +578,7 @@
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v11</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v12</p>
     </div>
   </div>
 
@@ -1038,7 +1052,7 @@
         c.profile = await getProfile(c.user_id);
         checkins.unshift(c);
         addMarker(c);
-        renderFeed(); updateCounters();
+        renderFeed(); updateCounters(); renderLb();
         if (c.user_id !== session.user.id) toast(`${c.profile.pseudo.toUpperCase()} A LÂCHÉ UNE VODY ${c.mood||"⚡"}`);
       })
       .subscribe();
@@ -1280,24 +1294,73 @@
   }
 
   /* ============================================================
-     CLASSEMENT (vue weekly_scores)
+     CLASSEMENT (weekly_scores + all_time_scores)
   ============================================================ */
   const LB_BG=["var(--magenta)","var(--cyan)","var(--lime)","var(--orange)"];
   const LB_FG=["#fff","var(--ink)","var(--ink)","var(--ink)"];
+  let lbScope = "crew";   // "crew" | "global"
+  let lbPeriod = "week";  // "week" | "total"
+
+  $("lbScopeToggle").querySelectorAll(".lb-tog").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      lbScope = b.dataset.scope;
+      $("lbScopeToggle").querySelectorAll(".lb-tog").forEach(x=>x.classList.toggle("on", x===b));
+      renderLb();
+    });
+  });
+  document.querySelectorAll('.lb-toggles [data-period]').forEach(b=>{
+    b.addEventListener("click", ()=>{
+      lbPeriod = b.dataset.period;
+      b.parentElement.querySelectorAll(".lb-tog").forEach(x=>x.classList.toggle("on", x===b));
+      renderLb();
+    });
+  });
+
   async function renderLb(){
-    // avec un crew : classement du crew. Sans crew : classement mondial, nommé comme tel.
-    $("lbTitle").textContent = myCrews.length ? "CLASSEMENT DU CREW" : "CLASSEMENT MONDIAL";
-    const {data} = await sb.from("weekly_scores").select("*").limit(50);
-    let rows = data||[];
-    if (myCrews.length) rows = rows.filter(r=>crewUserIds.has(r.user_id));
-    rows = rows.slice(0,10);
+    // pas de crew → on force le scope global (rien à afficher côté "mon crew")
+    if (!myCrews.length) lbScope = "global";
+    $("lbScopeToggle").style.display = myCrews.length ? "flex" : "none";
+
+    const scoped = lbScope === "crew";
+    const c = myCrews[0];
+    $("lbTitle").textContent = scoped ? "CLASSEMENT DU CREW" : "CLASSEMENT GÉNÉRAL";
+    $("lbNote").textContent = lbPeriod==="week"
+      ? "Classement de la semaine (reset le lundi)." + (scoped ? " Partage le code de ton crew pour inviter les potes." : "")
+      : "Classement total, cumulé depuis l'inscription de chacun.";
+
+    const table = lbPeriod === "week" ? "weekly_scores" : "all_time_scores";
+    const {data, error} = await sb.from(table).select("*").limit(500);
+    if (error){ $("lbList").innerHTML = `<p style="color:rgba(255,255,255,.6);font-size:14px">Classement indisponible pour l'instant.</p>`; return; }
+    const scoreByUser = {};
+    (data||[]).forEach(r=>{ scoreByUser[r.user_id] = {score:r.score, pseudo:r.pseudo, color:r.color}; });
+
+    let rows;
+    if (scoped){
+      // tous les membres du crew, y compris ceux à 0
+      const ids = [...crewUserIds];
+      const missing = ids.filter(id=>!profileCache[id]);
+      if (missing.length){
+        const {data: ps} = await sb.from("profiles").select("id,pseudo,color").in("id", missing);
+        (ps||[]).forEach(p=>profileCache[p.id]={pseudo:p.pseudo,color:p.color});
+      }
+      rows = ids.map(id=>({
+        user_id:id,
+        pseudo: (scoreByUser[id]||{}).pseudo || (profileCache[id]||{}).pseudo || "???",
+        score: (scoreByUser[id]||{}).score || 0
+      }));
+    } else {
+      rows = Object.entries(scoreByUser).map(([user_id,v])=>({user_id, pseudo:v.pseudo, score:v.score}));
+    }
+    rows.sort((a,b)=>b.score-a.score);
+    rows = rows.slice(0,50);
+
     $("lbList").innerHTML = rows.map((r,i)=>`
       <div class="lb" style="background:${LB_BG[i%4]};color:${LB_FG[i%4]}">
         <span class="rank">${i+1}</span>
         <div class="pp">${initials(r.pseudo)}</div>
         <div><div class="name">${escapeHtml(r.pseudo)}${r.user_id===session.user.id?' (toi)':''}</div></div>
         <span class="score">${r.score}</span>
-      </div>`).join("") || `<p style="color:rgba(255,255,255,.6);font-size:14px">Personne n'a encore scoré cette semaine.</p>`;
+      </div>`).join("") || `<p style="color:rgba(255,255,255,.6);font-size:14px">Personne n'a encore scoré.</p>`;
   }
 
   /* ============================================================
@@ -1358,7 +1421,7 @@
       closeSheets();
       const n=btn.dataset.nav;
       if (n==="feed") $("sheet-feed").classList.add("open");
-      if (n==="crew") $("sheet-crew").classList.add("open");
+      if (n==="crew"){ $("sheet-crew").classList.add("open"); loadCrews().then(renderLb); }
       if (n==="profil") $("sheet-profil").classList.add("open");
     });
   });

@@ -244,6 +244,20 @@
     background:#fff;border-color:var(--black);transform:rotate(-6deg) scale(1.18);
     box-shadow:3px 3px 0 rgba(11,1,24,.55);
   }
+  .products{display:flex;gap:8px;flex-wrap:wrap}
+  .product-btn{
+    background:rgba(255,255,255,.08);border:3px solid transparent;border-radius:18px;
+    font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;transition:.12s var(--pop);
+    color:#fff;font-family:var(--fb);-webkit-tap-highlight-color:transparent;
+  }
+  .product-btn.on{
+    background:var(--lime);border-color:var(--black);color:var(--ink);transform:scale(1.06);
+    box-shadow:3px 3px 0 rgba(11,1,24,.55);
+  }
+  .product-tag{
+    display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
+    background:rgba(255,255,255,.14);color:#fff;margin-left:6px;vertical-align:1px;
+  }
   #descInput{
     width:100%;background:rgba(255,255,255,.08);border:3px solid rgba(255,255,255,.3);
     border-radius:18px;padding:13px 15px;color:#fff;font-family:var(--fb);font-size:14px;
@@ -475,6 +489,15 @@
         <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
       </div>
       <div class="comp-row">
+        <div class="comp-label">🧃 C'ÉTAIT QUOI ?</div>
+        <div class="products" id="products">
+          <button class="product-btn" data-p="vody">VODY</button>
+          <button class="product-btn" data-p="bantu">BANTU</button>
+          <button class="product-btn" data-p="buzzballz">BUZZBALLZ</button>
+          <button class="product-btn" data-p="autre">AUTRE</button>
+        </div>
+      </div>
+      <div class="comp-row">
         <div class="comp-label">🎭 L'HUMEUR DU MOMENT</div>
         <div class="moods" id="moods">
           <button class="mood-btn" data-m="😎">😎</button>
@@ -593,7 +616,8 @@
   let reactionCounts = {};      // checkin_id -> n
   let myReactions = new Set();  // checkin_id
   let filter = "monde";
-  let compose = {photo:null, mood:null, lat:null, lng:null};
+  let compose = {photo:null, mood:null, product:null, lat:null, lng:null};
+  const PRODUCT_LABEL = {vody:"VODY", bantu:"BANTU", buzzballz:"BUZZBALLZ", autre:"AUTRE"};
 
   /* ============================================================
      HELPERS
@@ -719,7 +743,7 @@
     const pr = c.profile;
     let h = "";
     if (c.mood) h += `<span class="mood">${c.mood}</span>`;
-    h += `<b>${escapeHtml(pr.pseudo)}</b><br><small>${timeAgo(c.created_at)}</small>`;
+    h += `<b>${escapeHtml(pr.pseudo)}</b>${c.product?`<span class="product-tag">${escapeHtml(PRODUCT_LABEL[c.product]||c.product)}</span>`:""}<br><small>${timeAgo(c.created_at)}</small>`;
     if (c.description) h += `<div class="desc">« ${escapeHtml(c.description)} »</div>`;
     if (c.photo_url) h += `<img src="${c.photo_url}" alt="" loading="lazy">`;
     if (session && c.user_id === session.user.id)
@@ -772,26 +796,80 @@
   const spotMarkerById = {};
   const spotIcon = ()=> L.divIcon({className:"vspot",iconSize:[40,40],iconAnchor:[20,20],popupAnchor:[0,-18],html:'<div class="box">🛒</div>'});
 
+  const spotDraft = {}; // id -> {rating, products:Set, photoBlob, photoPreview}
+  function starsHtml(n){
+    const full = Math.round(n);
+    return "★".repeat(full) + "☆".repeat(5-full);
+  }
   function spotPopupHtml(s){
     const rs = spotReviews[s.id]||[];
-    const ok = rs.filter(r=>r.found).length, ko = rs.filter(r=>!r.found).length;
+    const found = rs.filter(r=>r.found), notFound = rs.filter(r=>!r.found);
+    const ratings = found.map(r=>r.rating).filter(Boolean);
+    const avgRating = ratings.length ? ratings.reduce((a,b)=>a+b,0)/ratings.length : null;
+    const productCounts = {};
+    found.forEach(r=>(r.products||[]).forEach(p=>productCounts[p]=(productCounts[p]||0)+1));
+    const prices = found.map(r=>r.price).filter(Boolean);
+    const hoursList = found.map(r=>r.hours).filter(Boolean);
+    const photos = found.map(r=>r.photo_url).filter(Boolean).slice(-3);
     const by = (profileCache[s.created_by]||{}).pseudo || "???";
+    const my = rs.find(r=>session && r.user_id===session.user.id);
+
+    // (ré)initialise le brouillon d'avis à chaque ouverture de popup
+    spotDraft[s.id] = {
+      rating: (my && my.rating) || 0,
+      products: new Set((my && my.products) || []),
+      photoBlob: null,
+      photoPreview: (my && my.photo_url) || null
+    };
+
     let h = `<b>🛒 ${escapeHtml(s.name)}</b><br><small>par ${escapeHtml(by)} · ${timeAgo(s.created_at)}</small>`;
-    h += `<div style="margin:5px 0;font-weight:700">✅ ${ok} trouvé · ❌ ${ko} bredouille</div>`;
+    if (avgRating) h += `<div style="margin:5px 0">${starsHtml(avgRating)} <b>${avgRating.toFixed(1)}</b>/5 · ${ratings.length} avis</div>`;
+    h += `<div style="font-size:11px;margin:2px 0 6px">✅ ${found.length} trouvé · ❌ ${notFound.length} bredouille</div>`;
+    if (Object.keys(productCounts).length){
+      h += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">` +
+        Object.entries(productCounts).map(([p,n])=>`<span class="product-tag">${escapeHtml(PRODUCT_LABEL[p]||p)} ×${n}</span>`).join("") + `</div>`;
+    }
+    if (prices.length) h += `<div style="font-size:12px">💰 ${escapeHtml(prices.slice(-3).join(" · "))}</div>`;
+    if (hoursList.length) h += `<div style="font-size:12px">🕒 ${escapeHtml(hoursList[hoursList.length-1])}</div>`;
+    if (photos.length){
+      h += `<div style="display:flex;gap:4px;margin:6px 0">` +
+        photos.map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:2px solid var(--black)"></a>`).join("") + `</div>`;
+    }
     rs.filter(r=>r.comment).slice(-2).forEach(r=>{
       h += `<div class="desc">« ${escapeHtml(r.comment)} » <small>— ${escapeHtml((profileCache[r.user_id]||{}).pseudo||"???")}</small></div>`;
     });
-    h += `<input id="sc-${s.id}" maxlength="140" placeholder="commentaire (optionnel)" style="width:100%;margin-top:7px;padding:7px 9px;border:2px solid var(--black);border-radius:9px;font-size:12px;font-family:var(--fb)">`;
-    h += `<div style="display:flex;gap:6px;margin-top:7px">
-      <button onclick="spotVote('${s.id}',true)" style="flex:1;background:#C8FF2E;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">✅ TROUVÉ</button>
-      <button onclick="spotVote('${s.id}',false)" style="flex:1;background:#eee;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">❌ RIEN</button>
+
+    // formulaire d'avis
+    h += `<div style="margin-top:8px;padding-top:8px;border-top:2px solid rgba(0,0,0,.1)">
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px">TON AVIS</div>
+      <div id="starpick-${s.id}" style="margin-bottom:6px">` +
+        [1,2,3,4,5].map(n=>`<span data-n="${n}" onclick="spotSetRating('${s.id}',${n})" style="cursor:pointer;font-size:19px">${n<=spotDraft[s.id].rating?"★":"☆"}</span>`).join("") +
+      `</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">` +
+        ["vody","bantu","buzzballz"].map(p=>`
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;background:rgba(0,0,0,.06);padding:5px 8px;border-radius:99px;cursor:pointer">
+            <input type="checkbox" value="${p}" ${spotDraft[s.id].products.has(p)?"checked":""} onchange="spotToggleProduct('${s.id}','${p}',this.checked)">${PRODUCT_LABEL[p]}
+          </label>`).join("") +
+      `</div>
+      <input id="price-${s.id}" maxlength="20" placeholder="Prix (ex: 6€)" style="width:100%;margin-bottom:5px;padding:7px 9px;border:2px solid var(--black);border-radius:9px;font-size:12px;font-family:var(--fb)">
+      <input id="hours-${s.id}" maxlength="40" placeholder="Horaires (ex: 8h-22h)" style="width:100%;margin-bottom:5px;padding:7px 9px;border:2px solid var(--black);border-radius:9px;font-size:12px;font-family:var(--fb)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <button type="button" onclick="document.getElementById('photoin-${s.id}').click()" style="background:rgba(0,0,0,.08);border:2px solid var(--black);border-radius:99px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">📷 PHOTO</button>
+        <img id="photoprev-${s.id}" src="${spotDraft[s.id].photoPreview||""}" style="width:32px;height:32px;object-fit:cover;border-radius:7px;display:${spotDraft[s.id].photoPreview?"block":"none"}">
+        <input type="file" id="photoin-${s.id}" accept="image/*" hidden onchange="spotPickPhoto('${s.id}', this)">
+      </div>
+      <input id="sc-${s.id}" maxlength="140" placeholder="commentaire (optionnel)" style="width:100%;margin-bottom:7px;padding:7px 9px;border:2px solid var(--black);border-radius:9px;font-size:12px;font-family:var(--fb)">
+      <div style="display:flex;gap:6px">
+        <button onclick="spotSubmitReview('${s.id}')" style="flex:1;background:#C8FF2E;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">✅ PUBLIER L'AVIS</button>
+        <button onclick="spotVote('${s.id}',false)" style="flex:1;background:#eee;border:2px solid #0B0118;border-radius:99px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">❌ RIEN TROUVÉ</button>
+      </div>
     </div>`;
     if (session && s.created_by === session.user.id)
       h += `<button onclick="spotDelete('${s.id}')" style="margin-top:7px;background:#FF2E9E;color:#fff;border:2px solid #0B0118;border-radius:99px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🗑 SUPPRIMER LE SPOT</button>`;
     return h;
   }
   function addSpotMarker(s){
-    const m = L.marker([s.lat,s.lng],{icon:spotIcon()}).bindPopup(()=>spotPopupHtml(s),{maxWidth:240});
+    const m = L.marker([s.lat,s.lng],{icon:spotIcon()}).bindPopup(()=>spotPopupHtml(s),{maxWidth:260});
     m.on("click", ()=> map.panTo([s.lat,s.lng],{animate:true,duration:.4}));
     spotMarkerById[s.id] = m; spotLayer.addLayer(m);
   }
@@ -808,17 +886,63 @@
     spotLayer.clearLayers();
     spots.forEach(addSpotMarker);
   }
-  window.spotVote = async (id, found)=>{
-    const el = document.getElementById("sc-"+id);
-    const comment = (el && el.value.trim()) || null;
-    const {error} = await sb.from("spot_reviews").upsert({spot_id:id, user_id:session.user.id, found, comment});
+  window.spotSetRating = (id, n)=>{
+    spotDraft[id] = spotDraft[id] || {rating:0, products:new Set(), photoBlob:null, photoPreview:null};
+    spotDraft[id].rating = n;
+    const el = document.getElementById("starpick-"+id);
+    if (el) el.querySelectorAll("span").forEach(s=>{ s.textContent = (+s.dataset.n<=n) ? "★" : "☆"; });
+  };
+  window.spotToggleProduct = (id, p, checked)=>{
+    spotDraft[id] = spotDraft[id] || {rating:0, products:new Set(), photoBlob:null, photoPreview:null};
+    if (checked) spotDraft[id].products.add(p); else spotDraft[id].products.delete(p);
+  };
+  window.spotPickPhoto = (id, input)=>{
+    const f = input.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = async ()=>{
+      spotDraft[id] = spotDraft[id] || {rating:0, products:new Set(), photoBlob:null, photoPreview:null};
+      spotDraft[id].photoBlob = await compressPhoto(rd.result);
+      const prev = document.getElementById("photoprev-"+id);
+      if (prev){ prev.src = rd.result; prev.style.display="block"; }
+    };
+    rd.readAsDataURL(f);
+  };
+  window.spotSubmitReview = async (id)=>{
+    const draft = spotDraft[id] || {rating:0, products:new Set(), photoBlob:null};
+    const priceEl = document.getElementById("price-"+id), hoursEl = document.getElementById("hours-"+id), cEl = document.getElementById("sc-"+id);
+    const price = (priceEl && priceEl.value.trim()) || null;
+    const hours = (hoursEl && hoursEl.value.trim()) || null;
+    const comment = (cEl && cEl.value.trim()) || null;
+    const products = [...draft.products];
+    if (!draft.rating && !products.length && !price && !hours && !comment && !draft.photoBlob){
+      toast("DONNE AU MOINS UNE INFO 🙂"); return;
+    }
+    let photo_url = draft.photoPreview || null;
+    if (draft.photoBlob){
+      const path = `${id}/${session.user.id}-${crypto.randomUUID()}.jpg`;
+      const {error: upErr} = await sb.storage.from("spot_photos").upload(path, draft.photoBlob, {contentType:"image/jpeg"});
+      if (upErr) toast("PHOTO KO, AVIS SANS 📷");
+      else photo_url = sb.storage.from("spot_photos").getPublicUrl(path).data.publicUrl;
+    }
+    const rec = {spot_id:id, user_id:session.user.id, found:true, rating: draft.rating||null, products, price, hours, photo_url, comment};
+    const {error} = await sb.from("spot_reviews").upsert(rec);
     if (error){ toast("ERREUR AVIS 😵 " + (error.message||"").slice(0,60)); return; }
     const arr = spotReviews[id] = spotReviews[id]||[];
     const i = arr.findIndex(r=>r.user_id===session.user.id);
-    const rec = {spot_id:id, user_id:session.user.id, found, comment, created_at:new Date().toISOString()};
+    const full = {...rec, created_at:new Date().toISOString()};
+    if (i>=0) arr[i]=full; else arr.push(full);
+    map.closePopup();
+    toast("AVIS PUBLIÉ ✅");
+  };
+  window.spotVote = async (id, found)=>{
+    const {error} = await sb.from("spot_reviews").upsert({spot_id:id, user_id:session.user.id, found});
+    if (error){ toast("ERREUR AVIS 😵 " + (error.message||"").slice(0,60)); return; }
+    const arr = spotReviews[id] = spotReviews[id]||[];
+    const i = arr.findIndex(r=>r.user_id===session.user.id);
+    const rec = {spot_id:id, user_id:session.user.id, found, created_at:new Date().toISOString()};
     if (i>=0) arr[i]=rec; else arr.push(rec);
     map.closePopup();
-    toast(found ? "SPOT CONFIRMÉ ✅" : "SPOT SIGNALÉ BREDOUILLE ❌");
+    toast("SPOT SIGNALÉ BREDOUILLE ❌");
   };
   window.spotDelete = async (id)=>{
     if (!confirm("Supprimer ce spot ?")) return;
@@ -868,6 +992,14 @@
 
     // crews
     await loadCrews();
+    // rafraîchit la liste du crew en live quand quelqu'un rejoint/quitte
+    // (nécessaire en plus du fix RLS : sans ça, un membre déjà ouvert sur l'app
+    // ne voit un nouveau pote qu'après avoir rechargé la page)
+    sb.channel("crew-members-live")
+      .on("postgres_changes", {event:"*", schema:"public", table:"crew_members"}, async ()=>{
+        await loadCrews(); await renderLb(); refilter();
+      })
+      .subscribe();
 
     // rejoindre via ?crew=CODE
     const code = new URLSearchParams(location.search).get("crew");
@@ -975,10 +1107,11 @@
      COMPOSER + DROP
   ============================================================ */
   function openCompose(){
-    compose={photo:null, mood:null, lat:null, lng:null};
+    compose={photo:null, mood:null, product:null, lat:null, lng:null};
     $("photoZone").classList.remove("has");
     $("photoZone").innerHTML="Tape ici pour ajouter une photo<br><span style='font-size:11px;opacity:.6'>(optionnel, promis)</span>";
     $("moods").querySelectorAll(".mood-btn").forEach(b=>b.classList.remove("on"));
+    $("products").querySelectorAll(".product-btn").forEach(b=>b.classList.remove("on"));
     $("descInput").value="";
     $("sheet-compose").classList.add("open");
     if (navigator.geolocation){
@@ -1016,6 +1149,14 @@
       const was=b.classList.contains("on");
       $("moods").querySelectorAll(".mood-btn").forEach(x=>x.classList.remove("on"));
       compose.mood = was ? null : b.dataset.m;
+      if (!was) b.classList.add("on");
+    });
+  });
+  $("products").querySelectorAll(".product-btn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const was=b.classList.contains("on");
+      $("products").querySelectorAll(".product-btn").forEach(x=>x.classList.remove("on"));
+      compose.product = was ? null : b.dataset.p;
       if (!was) b.classList.add("on");
     });
   });
@@ -1059,6 +1200,7 @@
       const {data, error} = await sb.from("checkins").insert({
         user_id: session.user.id, lat, lng,
         mood: compose.mood,
+        product: compose.product,
         description: $("descInput").value.trim() || null,
         photo_url
       }).select().single();
@@ -1112,7 +1254,7 @@
       <div class="post" data-emoji="${c.mood||"⚡"}">
         <div class="pp" style="background:${pr.color}">${initials(pr.pseudo)}</div>
         <div style="flex:1">
-          <p><b style="color:#fff">${escapeHtml(pr.pseudo)}</b> a lâché une vody</p>
+          <p><b style="color:#fff">${escapeHtml(pr.pseudo)}</b> a lâché une vody${c.product?`<span class="product-tag">${escapeHtml(PRODUCT_LABEL[c.product]||c.product)}</span>`:""}</p>
           <div class="meta">${timeAgo(c.created_at)}</div>
           ${c.description?`<div class="ptxt">« ${escapeHtml(c.description)} »</div>`:""}
           ${c.photo_url?`<img class="photo" src="${c.photo_url}" alt="" loading="lazy">`:""}

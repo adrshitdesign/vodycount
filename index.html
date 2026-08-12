@@ -164,6 +164,84 @@
   .conf{position:absolute;font-size:24px;pointer-events:none;z-index:25;animation:fly .8s ease-out forwards}
   @keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rr));opacity:0}}
 
+  /* ============ PRÉVENTION ============ */
+  .care-card{
+    background:#fff;color:var(--ink);border:3px solid var(--black);border-radius:22px;
+    padding:20px 18px;max-width:320px;box-shadow:6px 6px 0 rgba(11,1,24,.55);
+    transform:rotate(-.5deg);text-align:left;
+  }
+  .care-card h3{font-family:var(--fd);font-size:14px;margin-bottom:9px;line-height:1.4}
+  .care-card p{font-size:13px;line-height:1.55;margin-bottom:9px}
+  .care-card .num{
+    display:block;background:var(--cyan);border:2px solid var(--black);border-radius:14px;
+    padding:11px 12px;font-weight:700;font-size:15px;text-align:center;margin:11px 0 6px;
+    text-decoration:none;color:var(--ink);box-shadow:3px 3px 0 rgba(11,1,24,.4);
+  }
+  .care-card small{font-size:10.5px;opacity:.7;display:block;text-align:center}
+
+  /* ============ CALQUES CARTE ============ */
+  .layers{
+    position:absolute;z-index:20;left:14px;right:14px;
+    top:calc(70px + env(safe-area-inset-top));
+    display:flex;gap:7px;pointer-events:none;
+  }
+  .layers button{
+    pointer-events:auto;
+    background:rgba(20,4,46,.9);backdrop-filter:blur(8px);
+    border:2px solid var(--black);outline:2px solid rgba(255,255,255,.85);
+    color:rgba(255,255,255,.4);border-radius:99px;padding:7px 12px;cursor:pointer;
+    font-family:var(--fd);font-size:9px;box-shadow:3px 3px 0 rgba(11,1,24,.5);
+    transition:.15s;-webkit-tap-highlight-color:transparent;
+  }
+  .layers button.on{color:#fff;background:var(--violet);transform:rotate(-1.5deg)}
+
+  /* ============ PODIUM ============ */
+  .podium{display:flex;align-items:flex-end;gap:7px;margin:4px 0 16px}
+  .pod{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+  .pod .medal{font-size:19px;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.4))}
+  .pod .pp{
+    width:44px;height:44px;border-radius:50%;border:3px solid var(--black);
+    display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--ink);
+    background:#fff;box-shadow:3px 3px 0 rgba(11,1,24,.5);
+  }
+  .pod .pname{
+    font-family:var(--fd);font-size:8.5px;max-width:100%;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
+  }
+  .pod .block{
+    width:100%;border-radius:14px 14px 0 0;border:3px solid var(--black);border-bottom:none;
+    display:grid;place-items:center;font-family:var(--fd);font-size:17px;color:var(--ink);
+  }
+  .pod.p1 .block{height:70px;background:var(--lime)}
+  .pod.p2 .block{height:52px;background:var(--cyan)}
+  .pod.p3 .block{height:38px;background:var(--orange)}
+  .lb.me-row{outline:3px dashed var(--lime);outline-offset:2px}
+  .lb-gap{
+    text-align:center;font-family:var(--fd);font-size:13px;
+    color:rgba(255,255,255,.35);margin:2px 0 8px;letter-spacing:.3em;
+  }
+
+  /* ============ BADGES ============ */
+  .badges{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .badge{
+    border-radius:18px;padding:11px;border:3px solid var(--black);
+    box-shadow:4px 4px 0 rgba(11,1,24,.5);color:var(--ink);
+  }
+  .badge:nth-child(odd){transform:rotate(-1deg)}
+  .badge:nth-child(even){transform:rotate(1deg)}
+  .badge .be{font-size:22px;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.3))}
+  .badge .bn{font-family:var(--fd);font-size:10.5px;margin-top:3px}
+  .badge .bd{font-size:10px;font-weight:500;opacity:.8;margin-top:2px;line-height:1.35}
+  .badge.locked{
+    background:rgba(255,255,255,.06)!important;color:rgba(255,255,255,.4);
+    border-color:rgba(255,255,255,.18);box-shadow:none;transform:none;
+  }
+  .badge.locked .be{filter:grayscale(1);opacity:.45}
+  h3.sub{
+    font-family:var(--fd);font-size:12px;color:var(--cyan);
+    margin:4px 0 11px;letter-spacing:.04em;transform:rotate(-1deg);
+  }
+
   /* ============ SPOTS ============ */
   .gone{display:none!important}
   #spotBtn{
@@ -434,6 +512,18 @@
     <p class="ov-note">L'abus d'alcool est dangereux pour la santé. À consommer avec modération.</p>
   </div>
 
+  <!-- ============ PRÉVENTION ============ -->
+  <div class="overlay hidden" id="ov-care">
+    <div class="care-card">
+      <h3>ON COMPTE, ON N'INCITE PAS ⚡</h3>
+      <p>VodyCount sert à se souvenir des bonnes soirées entre potes — pas à boire plus. Personne ne gagne rien à enchaîner : les titres récompensent les endroits découverts, pas les quantités.</p>
+      <p>Si toi ou un proche voulez en parler, Alcool Info Service répond tous les jours de 8h à 2h :</p>
+      <a class="num" href="tel:0980980930">📞 0 980 980 930</a>
+      <small>Anonyme · non surtaxé · alcool-info-service.fr</small>
+    </div>
+    <button class="ov-btn" id="careOk" style="margin-top:20px">C'EST COMPRIS</button>
+  </div>
+
   <!-- ============ AUTH ============ -->
   <div class="overlay hidden" id="ov-auth">
     <div class="ov-logo">VODYCOUNT</div>
@@ -455,6 +545,12 @@
       <button data-f="moi">⚡ MOI</button>
     </div>
     <div class="chip">⚡<b id="todayCount">0</b></div>
+  </div>
+
+  <!-- CALQUES : ce qu'on affiche sur la carte -->
+  <div class="layers" id="layers">
+    <button class="on" data-l="vody">⚡ VODYS</button>
+    <button class="on" data-l="spots">🛒 SPOTS</button>
   </div>
 
   <div class="fab-zone">
@@ -551,7 +647,9 @@
         <button class="lb-tog on" data-period="week">CETTE SEMAINE</button>
         <button class="lb-tog" data-period="total">DEPUIS TOUJOURS</button>
       </div>
+      <div class="podium" id="podium"></div>
       <div id="lbList"></div>
+      <div id="lbMe"></div>
       <p class="lb-note" id="lbNote">Classement de la semaine (reset le lundi). Partage le code de ton crew pour inviter les potes.</p>
     </div>
   </div>
@@ -573,12 +671,15 @@
         <div class="stat"><b id="pWeek">0</b><span>Semaine</span></div>
         <div class="stat"><b id="pSpots">0</b><span>Spots</span></div>
       </div>
+      <h3 class="sub">▸ TES TITRES</h3>
+      <div class="badges" id="badgeGrid"></div>
       <button id="shareBtn">📲 PARTAGER MON PROFIL</button>
       <div class="danger-zone">
+        <button id="careAgain">ℹ️ AIDE & PRÉVENTION</button>
         <button id="logoutBtn">SE DÉCONNECTER</button>
         <button id="deleteBtn">SUPPRIMER MON COMPTE</button>
       </div>
-      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v12</p>
+      <p style="text-align:center;font-size:10px;opacity:.35;margin-top:14px">VodyCount v14</p>
     </div>
   </div>
 
@@ -632,6 +733,65 @@
   let filter = "monde";
   let compose = {photo:null, mood:null, product:null, lat:null, lng:null};
   const PRODUCT_LABEL = {vody:"VODY", bantu:"BANTU", buzzballz:"BUZZBALLZ", autre:"AUTRE"};
+  let layerVody = true, layerSpots = true;
+  let myBadges = new Set();
+
+  /* ---------- TITRES / ACHIEVEMENTS ----------
+     Aucun titre ne récompense la quantité bue : uniquement des lieux, des
+     moments et de la découverte. Ordre = ordre d'affichage dans le profil. */
+  const BADGE_DEFS = {
+    // — lieux —
+    altitude:   {e:"🏔️", n:"EN ALTITUDE",  d:"Un pin à plus de 1000 m",           bg:"var(--cyan)"},
+    sea_level:  {e:"🌊", n:"PIED MARIN",    d:"Un pin au niveau de la mer",        bg:"var(--lime)"},
+    historic:   {e:"🏛️", n:"HISTORIQUE",   d:"Un pin dans une ville historique",  bg:"var(--orange)"},
+    capital:    {e:"🌃", n:"CAPITALE",      d:"Un pin dans une capitale",          bg:"#FF8A3D"},
+    explorer:   {e:"🧭", n:"EXPLORATEUR",   d:"10 endroits différents",            bg:"var(--magenta)"},
+    globetrott: {e:"🌍", n:"GLOBETROTTEUR", d:"3 villes à + de 50 km d'écart",     bg:"var(--violet)"},
+    long_haul:  {e:"🚄", n:"LONGUE DISTANCE", d:"2 pins à + de 100 km le même jour", bg:"#7DD3FC"},
+    regular:    {e:"🎯", n:"HABITUÉ",       d:"5 pins au même endroit",            bg:"#FFD93D"},
+    // — moments —
+    night_owl:  {e:"🦉", n:"NUIT BLANCHE",  d:"Un pin entre 4h et 6h du matin",    bg:"#A78BFA"},
+    early_bird: {e:"🌅", n:"APÉRO SOLAIRE", d:"Un pin avant 17h",                  bg:"#FDBA74"},
+    new_year:   {e:"🎆", n:"NOUVEL AN",     d:"Un pin le 31 décembre ou le 1er janvier", bg:"#F472B6"},
+    halloween:  {e:"🎃", n:"HALLOWEEN",     d:"Un pin le 31 octobre",              bg:"#FB923C"},
+    bastille:   {e:"🇫🇷", n:"14 JUILLET",   d:"Un pin le 14 juillet",              bg:"#93C5FD"},
+    weeknight:  {e:"📅", n:"SEMAINE CHARGÉE", d:"Un pin un mardi… courage",        bg:"#C4B5FD"},
+    // — météo —
+    freezing:   {e:"❄️", n:"GRAND FROID",   d:"Un pin par moins de 0 °C",          bg:"#BAE6FD"},
+    rainy:      {e:"🌧️", n:"SOUS LA PLUIE", d:"Un pin sous la pluie",              bg:"#94A3B8"},
+    heatwave:   {e:"🔥", n:"CANICULE",      d:"Un pin par plus de 30 °C",          bg:"#FCA5A5"},
+    // — social & spots —
+    reporter:   {e:"📸", n:"REPORTER",      d:"10 pins avec photo",                bg:"#2EFFB0"},
+    spotter:    {e:"🛒", n:"DÉNICHEUR",     d:"3 spots ajoutés sur la carte",      bg:"#5EEAD4"},
+    guide:      {e:"🗺️", n:"GUIDE",        d:"5 avis publiés sur des spots",      bg:"#FDE047"},
+    together:   {e:"🤝", n:"ENSEMBLE",      d:"Un pin près d'un pote, en même temps", bg:"#F0ABFC"}
+  };
+  // [nom, lat, lng, rayon km] — villes classées / centres historiques
+  const HISTORIC_CITIES = [
+    ["Paris",48.8566,2.3522,8],["Versailles",48.8049,2.1204,4],["Rome",41.9028,12.4964,8],
+    ["Athènes",37.9838,23.7275,7],["Lisbonne",38.7223,-9.1393,6],["Prague",50.0755,14.4378,6],
+    ["Bruges",51.2093,3.2247,4],["Venise",45.4408,12.3155,4],["Florence",43.7696,11.2558,5],
+    ["Carcassonne",43.2130,2.3491,3],["Mont-Saint-Michel",48.6361,-1.5115,2],["Avignon",43.9493,4.8055,4],
+    ["Saint-Malo",48.6493,-2.0257,3],["Strasbourg",48.5734,7.7521,5],["Lyon",45.7640,4.8357,6],
+    ["Bordeaux",44.8378,-0.5792,5],["Nancy",48.6921,6.1844,4],["Reims",49.2583,4.0317,4],
+    ["Séville",37.3891,-5.9845,6],["Édimbourg",55.9533,-3.1883,5],["Istanbul",41.0082,28.9784,9]
+  ];
+  // capitales (rayon large : agglomération)
+  const CAPITALS = [
+    ["Paris",48.8566,2.3522,20],["Londres",51.5074,-0.1278,22],["Bruxelles",50.8503,4.3517,15],
+    ["Berlin",52.5200,13.4050,20],["Madrid",40.4168,-3.7038,18],["Lisbonne",38.7223,-9.1393,14],
+    ["Rome",41.9028,12.4964,18],["Amsterdam",52.3676,4.9041,14],["Vienne",48.2082,16.3738,15],
+    ["Prague",50.0755,14.4378,14],["Varsovie",52.2297,21.0122,15],["Copenhague",55.6761,12.5683,14],
+    ["Stockholm",59.3293,18.0686,15],["Oslo",59.9139,10.7522,14],["Dublin",53.3498,-6.2603,13],
+    ["Athènes",37.9838,23.7275,16],["Budapest",47.4979,19.0402,15],["Berne",46.9480,7.4474,10],
+    ["Luxembourg",49.6116,6.1319,8],["Rabat",34.0209,-6.8416,14],["Alger",36.7538,3.0588,16],
+    ["Tunis",36.8065,10.1815,14],["Dakar",14.7167,-17.4677,16]
+  ];
+  function distKm(lat1,lng1,lat2,lng2){
+    const R=6371, dLa=(lat2-lat1)*Math.PI/180, dLo=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLa/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLo/2)**2;
+    return 2*R*Math.asin(Math.sqrt(a));
+  }
 
   /* ============================================================
      HELPERS
@@ -674,10 +834,22 @@
   /* ============================================================
      AGE GATE
   ============================================================ */
-  if (store.get("vc_age_ok") === "1") $("ov-gate").classList.add("hidden");
+  function maybeShowCare(){
+    if (store.get("vc_care_ok") !== "1") $("ov-care").classList.remove("hidden");
+  }
+  if (store.get("vc_age_ok") === "1"){ $("ov-gate").classList.add("hidden"); maybeShowCare(); }
   $("gateYes").addEventListener("click", ()=>{
     store.set("vc_age_ok","1");
     $("ov-gate").classList.add("hidden");
+    maybeShowCare();
+  });
+  $("careOk").addEventListener("click", ()=>{
+    store.set("vc_care_ok","1");
+    $("ov-care").classList.add("hidden");
+  });
+  $("careAgain").addEventListener("click", ()=>{
+    closeSheets();
+    $("ov-care").classList.remove("hidden");
   });
   $("gateNo").addEventListener("click", ()=>{
     document.querySelector("#ov-gate .ov-sub").textContent = "Reviens quand tu seras majeur·e ! 👋";
@@ -776,6 +948,7 @@
     toast("VODY SUPPRIMÉE 🗑");
   };
   function isVisible(c){
+    if (!layerVody) return false;
     if (filter==="moi") return c.user_id === session.user.id;
     if (filter==="crew") return crewUserIds.has(c.user_id);
     return true;
@@ -799,6 +972,26 @@
       filter=b.dataset.f;
       if (filter==="crew" && myCrews.length===0) toast("CRÉE OU REJOINS UN CREW D'ABORD 🔥");
       refilter();
+    });
+  });
+
+  /* ---------- calques : ce qu'on affiche sur la carte ---------- */
+  function refreshSpotLayer(){
+    if (layerSpots) map.addLayer(spotLayer); else map.removeLayer(spotLayer);
+  }
+  $("layers").querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const on = !b.classList.contains("on");
+      b.classList.toggle("on", on);
+      if (b.dataset.l === "vody"){
+        layerVody = on;
+        refilter();
+        toast(on ? "VODYS AFFICHÉES ⚡" : "VODYS MASQUÉES");
+      } else {
+        layerSpots = on;
+        refreshSpotLayer();
+        toast(on ? "SPOTS AFFICHÉS 🛒" : "SPOTS MASQUÉS");
+      }
     });
   });
 
@@ -947,6 +1140,7 @@
     if (i>=0) arr[i]=full; else arr.push(full);
     map.closePopup();
     toast("AVIS PUBLIÉ ✅");
+    checkReviewBadge();
   };
   window.spotVote = async (id, found)=>{
     const {error} = await sb.from("spot_reviews").upsert({spot_id:id, user_id:session.user.id, found});
@@ -989,7 +1183,142 @@
     $("spotName").value=""; $("spotMsg").textContent="";
     $("ov-spot").classList.add("hidden"); endPlacing();
     toast("SPOT AJOUTÉ 🛒");
+    checkSpotBadge();
   });
+
+  /* ============================================================
+     TITRES — débloqués par les lieux, jamais par les quantités
+  ============================================================ */
+  // File d'attente : si plusieurs titres tombent d'un coup, ils s'annoncent
+  // l'un après l'autre au lieu de s'écraser mutuellement.
+  const badgeQueue = [];
+  let badgeQueueRunning = false;
+  function flushBadgeQueue(){
+    if (badgeQueueRunning) return;
+    badgeQueueRunning = true;
+    const step = ()=>{
+      const id = badgeQueue.shift();
+      if (!id){ badgeQueueRunning = false; return; }
+      const b = BADGE_DEFS[id];
+      toast(`TITRE DÉBLOQUÉ ${b.e} ${b.n} !`);
+      confetti();
+      if (navigator.vibrate) navigator.vibrate([25,60,25]);
+      setTimeout(step, 2600);
+    };
+    setTimeout(step, 2400); // laisse passer le toast "+1 VODY"
+  }
+  async function awardBadge(id){
+    if (myBadges.has(id) || !BADGE_DEFS[id]) return;
+    myBadges.add(id); // optimiste : évite les doublons si deux checks se croisent
+    const {error} = await sb.from("badges").insert({user_id: session.user.id, badge_id: id});
+    if (error){ myBadges.delete(id); return; } // on retentera au prochain pin
+    renderBadges();
+    badgeQueue.push(id);
+    flushBadgeQueue();
+  }
+  async function checkGeoBadges(lat, lng){
+    const mine = checkins.filter(c=>c.user_id===session.user.id);
+    const now = new Date();
+
+    /* ---------- 1. MOMENTS (instantané, zéro réseau) ---------- */
+    const h = now.getHours(), day = now.getDay(), D = now.getDate(), M = now.getMonth()+1;
+    if (h >= 4 && h < 6)  await awardBadge("night_owl");
+    if (h < 17 && h >= 6) await awardBadge("early_bird");
+    if ((M===12 && D===31) || (M===1 && D===1)) await awardBadge("new_year");
+    if (M===10 && D===31) await awardBadge("halloween");
+    if (M===7  && D===14) await awardBadge("bastille");
+    if (day === 2)        await awardBadge("weeknight");
+
+    /* ---------- 2. LIEUX (calcul local) ---------- */
+    if (HISTORIC_CITIES.some(([_,cla,clo,r]) => distKm(lat,lng,cla,clo) <= r))
+      await awardBadge("historic");
+    if (CAPITALS.some(([_,cla,clo,r]) => distKm(lat,lng,cla,clo) <= r))
+      await awardBadge("capital");
+
+    // endroits distincts (~100 m près)
+    const spotsSet = new Set(mine.map(c=>c.lat.toFixed(3)+","+c.lng.toFixed(3)));
+    if (spotsSet.size >= 10) await awardBadge("explorer");
+
+    // 5 pins au même endroit (dans un rayon de 150 m)
+    const nearSame = mine.filter(c=>distKm(lat,lng,c.lat,c.lng) < .15).length;
+    if (nearSame >= 5) await awardBadge("regular");
+
+    // villes distinctes : zones espacées de 50 km
+    const zones = [];
+    mine.forEach(c=>{ if (!zones.some(z=>distKm(c.lat,c.lng,z[0],z[1]) < 50)) zones.push([c.lat,c.lng]); });
+    if (zones.length >= 3) await awardBadge("globetrott");
+
+    // 2 pins à + de 100 km le même jour
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const todayPins = mine.filter(c=>new Date(c.created_at) >= todayStart);
+    if (todayPins.some(c=>distKm(lat,lng,c.lat,c.lng) > 100)) await awardBadge("long_haul");
+
+    /* ---------- 3. PHOTOS & SPOTS ---------- */
+    if (mine.filter(c=>c.photo_url).length >= 10) await awardBadge("reporter");
+
+    /* ---------- 4. ENSEMBLE : un pote a piné tout près, récemment ---------- */
+    if (!myBadges.has("together")){
+      const halfHourAgo = Date.now() - 30*60*1000;
+      const buddy = checkins.find(c =>
+        c.user_id !== session.user.id &&
+        new Date(c.created_at).getTime() > halfHourAgo &&
+        distKm(lat, lng, c.lat, c.lng) < .1
+      );
+      if (buddy) await awardBadge("together");
+    }
+
+    /* ---------- 5. RÉSEAU : altitude + météo (une seule requête chacune) ---------- */
+    try {
+      if (!myBadges.has("altitude") && !myBadges.has("sea_level")){
+        const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`);
+        if (r.ok){
+          const j = await r.json();
+          const elev = j && j.elevation && j.elevation[0];
+          if (typeof elev === "number"){
+            if (elev >= 1000) await awardBadge("altitude");
+            else if (elev <= 3 && elev >= -3) await awardBadge("sea_level");
+          }
+        }
+      }
+      if (!myBadges.has("freezing") || !myBadges.has("rainy") || !myBadges.has("heatwave")){
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,precipitation`);
+        if (r.ok){
+          const j = await r.json();
+          const cur = j && j.current;
+          if (cur){
+            if (typeof cur.temperature_2m === "number"){
+              if (cur.temperature_2m < 0)  await awardBadge("freezing");
+              if (cur.temperature_2m > 30) await awardBadge("heatwave");
+            }
+            if (typeof cur.precipitation === "number" && cur.precipitation > 0)
+              await awardBadge("rainy");
+          }
+        }
+      }
+    } catch(e){ /* hors ligne : ces titres seront réévalués au prochain pin */ }
+  }
+  async function checkSpotBadge(){
+    const mine = spots.filter(s=>s.created_by === session.user.id);
+    if (mine.length >= 3) await awardBadge("spotter");
+  }
+  async function checkReviewBadge(){
+    let n = 0;
+    Object.values(spotReviews).forEach(arr=>{
+      if (arr.some(r=>r.user_id === session.user.id && (r.rating || r.comment || (r.products||[]).length))) n++;
+    });
+    if (n >= 5) await awardBadge("guide");
+  }
+  function renderBadges(){
+    const won = Object.keys(BADGE_DEFS).filter(id=>myBadges.has(id)).length;
+    $("badgeGrid").innerHTML = Object.entries(BADGE_DEFS).map(([id,b])=>{
+      const has = myBadges.has(id);
+      return `<div class="badge ${has?"":"locked"}"${has?` style="background:${b.bg}"`:""}>
+        <div class="be">${b.e}</div><div class="bn">${b.n}</div><div class="bd">${b.d}</div>
+      </div>`;
+    }).join("");
+    const sub = document.querySelector("#sheet-profil h3.sub");
+    if (sub) sub.textContent = `▸ TES TITRES (${won}/${Object.keys(BADGE_DEFS).length})`;
+  }
 
   /* ============================================================
      BOOT — chargement initial après login
@@ -1039,6 +1368,11 @@
     }
 
     await loadSpots();
+
+    // titres déjà gagnés
+    const {data: bg} = await sb.from("badges").select("badge_id").eq("user_id", session.user.id);
+    myBadges = new Set((bg||[]).map(b=>b.badge_id));
+    renderBadges();
 
     updateCounters();
     renderFeed();
@@ -1228,6 +1562,7 @@
       confetti();
       toast(+$("todayCount").textContent===4 ? "+1 VODY · PENSE À L'EAU 💧" : "+1 VODY ⚡");
       if (navigator.vibrate) navigator.vibrate([30,40,30]);
+      checkGeoBadges(lat, lng); // en tâche de fond, n'empêche jamais le pin
     } catch(e){
       console.error(e); toast("ERREUR, RÉESSAIE 😵");
     } finally {
@@ -1352,15 +1687,67 @@
       rows = Object.entries(scoreByUser).map(([user_id,v])=>({user_id, pseudo:v.pseudo, score:v.score}));
     }
     rows.sort((a,b)=>b.score-a.score);
-    rows = rows.slice(0,50);
 
-    $("lbList").innerHTML = rows.map((r,i)=>`
-      <div class="lb" style="background:${LB_BG[i%4]};color:${LB_FG[i%4]}">
-        <span class="rank">${i+1}</span>
+    // rang réel (les ex æquo partagent la même place)
+    let lastScore=null, lastRank=0;
+    rows.forEach((r,i)=>{
+      if (r.score !== lastScore){ lastRank = i+1; lastScore = r.score; }
+      r.rank = lastRank;
+    });
+
+    const total = rows.length;
+    const me = rows.find(r=>r.user_id===session.user.id);
+
+    if (!total){
+      $("podium").innerHTML = "";
+      $("lbMe").innerHTML = "";
+      $("lbList").innerHTML = `<p style="color:rgba(255,255,255,.6);font-size:14px">Personne n'a encore scoré. À toi de lancer le truc ⚡</p>`;
+      return;
+    }
+
+    // ---------- podium (top 3) ----------
+    const MEDALS = ["🥇","🥈","🥉"];
+    const top3 = rows.slice(0,3);
+    // ordre visuel : 2e — 1er — 3e
+    const order = [top3[1], top3[0], top3[2]];
+    const podClass = ["p2","p1","p3"];
+    $("podium").innerHTML = order.map((r,i)=>{
+      if (!r) return `<div class="pod"></div>`;
+      const place = top3.indexOf(r); // 0,1,2
+      return `<div class="pod ${podClass[i]}">
+        <span class="medal">${MEDALS[place]}</span>
+        <div class="pp" style="background:${(profileCache[r.user_id]||{}).color||"#fff"}">${initials(r.pseudo)}</div>
+        <div class="pname">${escapeHtml(r.pseudo)}${r.user_id===session.user.id?" (toi)":""}</div>
+        <div class="block">${r.score}</div>
+      </div>`;
+    }).join("");
+
+    // ---------- liste 4 → 10 ----------
+    const rest = rows.slice(3,10);
+    $("lbList").innerHTML = rest.map((r,i)=>`
+      <div class="lb ${r.user_id===session.user.id?"me-row":""}" style="background:${LB_BG[i%4]};color:${LB_FG[i%4]}">
+        <span class="rank">${r.rank}</span>
         <div class="pp">${initials(r.pseudo)}</div>
         <div><div class="name">${escapeHtml(r.pseudo)}${r.user_id===session.user.id?' (toi)':''}</div></div>
         <span class="score">${r.score}</span>
-      </div>`).join("") || `<p style="color:rgba(255,255,255,.6);font-size:14px">Personne n'a encore scoré.</p>`;
+      </div>`).join("");
+
+    // ---------- ta position si hors top 10 ----------
+    if (me && me.rank > 10){
+      $("lbMe").innerHTML = `
+        <div class="lb-gap">•••</div>
+        <div class="lb me-row" style="background:var(--lime);color:var(--ink)">
+          <span class="rank">${me.rank}</span>
+          <div class="pp">${initials(me.pseudo)}</div>
+          <div><div class="name">${escapeHtml(me.pseudo)} (toi)</div>
+            <div style="font-size:10.5px;opacity:.7">sur ${total} joueur${total>1?"s":""}</div></div>
+          <span class="score">${me.score}</span>
+        </div>`;
+    } else if (me){
+      $("lbMe").innerHTML = `<p style="text-align:center;font-size:11.5px;color:rgba(255,255,255,.5);margin-top:4px">Tu es ${me.rank}${me.rank===1?"er":"e"} sur ${total} joueur${total>1?"s":""} ⚡</p>`;
+    } else {
+      $("lbMe").innerHTML = "";
+    }
   }
 
   /* ============================================================
